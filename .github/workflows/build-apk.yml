@@ -19,38 +19,19 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
     
-    - name: 🔧 Set up Android SDK
-      run: |
-        mkdir -p $HOME/android-sdk/cmdline-tools
-        cd $HOME/android-sdk
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip -q commandlinetools-linux-11076708_latest.zip
-        mv cmdline-tools cmdline-tools-temp
-        mkdir -p cmdline-tools
-        mv cmdline-tools-temp cmdline-tools/latest
-        rm -f commandlinetools-linux-11076708_latest.zip
-        echo "y" | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
-        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
+    - name: 🔧 Setup Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        packages: 'platforms;android-34 build-tools;34.0.0'
     
-    - name: 🏗️ Build APK
+    - name: 🏗️ Build APK (using gradle directly)
       run: |
-        export ANDROID_HOME=$HOME/android-sdk
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
-        chmod +x gradlew
-        ./gradlew assembleRelease --no-daemon
+        # استخدام gradle مباشرة من Android SDK
+        cd app
+        $ANDROID_HOME/gradle/bin/gradle assembleRelease
     
     - name: 📤 Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: BlackSpy-APK
         path: app/build/outputs/apk/release/*.apk
-    
-    - name: 📤 Upload as Release
-      if: github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v1.0
-        name: "🔥 Black Spy Final v1.0"
-        files: app/build/outputs/apk/release/*.apk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
